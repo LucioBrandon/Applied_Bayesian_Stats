@@ -1,5 +1,5 @@
 ---
-title: "Homework 2"
+title: "Applied Bayesian Homework 2"
 author: "Brandon Lucio"
 date: "9/24/2021"
 output: pdf_document
@@ -48,7 +48,7 @@ craps <- function(){
 
 ```{r Monte Carlo Simulation}
 
-sims = 500000	# Number of times simulated
+sims = 10000	# Number of times simulated
 n = 10		# Number of games to play
 i.bet = 10	# Initial bet of 10 dollars
 winnings = rep(0, sims)
@@ -72,11 +72,13 @@ for(t in 1:sims){
 hist(winnings)
 ```
 
+From the histogram we can see that most of the time we are right around 0 with our winnings, with an average winnings of `r mean(winnings)` . But there is a potential of having very large losses. This shows that this betting strategy is not ideal.
+
 # Problem 2
 
-A manufacturer of microwave ovens is trying to determine the length of warranty period it should attach to its magnetron tube, the most critical component in the oven. Preliminary testing has shown that the [**length of life (in years), x**]{.ul}, of a magnetron tube has an [**exponential distribution probability distribution with a rate parameter β**]{.ul}. The manufacturer has collected *100 observations* about the length of life of magnetron tubes (data set is available on blackboard).
+A manufacturer of microwave ovens is trying to determine the length of warranty period it should attach to its magnetron tube, the most critical component in the oven. Preliminary testing has shown that the [**length of life (in years), x**]{.ul}, of a magnetron tube has an **exponential distribution probability distribution with a rate parameter** [$\beta$]{.ul} The manufacturer has collected *100 observations* about the length of life of magnetron tubes (data set is available on blackboard).
 
-```{r}
+```{r include=FALSE}
 oven<- read_table('Manufacturer.txt.txt')
 ```
 
@@ -106,7 +108,9 @@ b.  Based on part a) and then find the likelihood estimate (MLE) of $\beta$.
 
     ![](2.b.jpg)
 
-c.  Based on the uniform prior: p($\beta$) = 1, find the posterior distribution of $\beta$ and then find the posterior mean of $\beta$. Draw the posterior density function of $\beta$ using R-software.
+    \newpage
+
+c.  Based on the uniform prior: $P(\beta)=1$, find the posterior distribution of $\beta$ and then find the posterior mean of $\beta$. Draw the posterior density function of $\beta$ using R-software.
 
     ![](2.c.jpg)
 
@@ -130,13 +134,43 @@ d.  Based on the gamma distribution $p(\beta) \propto \beta^{a -1}exp(-\beta b)$
 
     ![](2.d.jpg)
 
+    \newpage
+
 e.  What is a 95% Bayesian credible interval for the average length of life of a magnetron tube under the ***uniform*** prior on part c)?
 
 ```{r}
-qgamma(c(0.025, 0.975),shape = a ,rate = b )
+M = 10000
+beta = rgamma(M, 101, 691.74)
+xast = rexp(M, beta)
+
+quantile(xast, c(0.025,0.975))
 
 ```
 
+-   Our 95% Bayesian credible interval is given by ( 0.172, 25.73 ). This means that over a large amount of samples, 95% of the time the average length of life for the magnetron tube will reside in this interval.
+
 f.  What is the posterior probability that the average length of life of a magnetron tube is less than 10 years under the ***uniform*** prior on part c)?
 
+    -   Using the set up from part e we simply take the mean(xast \< 10 ) and get the probability of the magnetron tube life being less than 10 years as 0.7673.
+
+```{r}
+mean(xast < 10)
+```
+
 g.  Under the uniform prior, find Bayesian credible interval of $\beta$ and Bayesian credible interval $1/\beta$? Is Bayesian credible interval invariant?
+
+    -   Bayesian credible for $\beta$ is ( 0.119, 0.176 )
+
+    ```{r}
+    qgamma(c(0.025,0.975), 101, 691.74)
+    ```
+
+    -   Bayesian credible for $1/\beta$ is ( 5.252, 7.67 ) $\neq$ the interval of $\beta$ thus the bayesian credible interval is not invariant.
+
+    ```{r}
+    M = 10000
+    beta <- rgamma( M, shape = 110, rate = 691.74)
+    t <- 1 / beta
+
+    quantile(t, c(0.025,0.975))
+    ```
