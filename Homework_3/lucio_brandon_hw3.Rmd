@@ -1,0 +1,268 @@
+---
+title: "Baysian HW 3"
+author: "Brandon Lucio"
+date: "10/16/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(gt)
+```
+
+# Problem 1
+
+Glass fragments found on a suspect's shoes or clothes are often used to connect the suspect to a crime scene. The index of refraction of the fragments are compared to the refractive index of the glass from the crime scene. To make this comparison rigorous, we need to know the variability the index of refraction is over a pane of glass. Bennett et al. (2003) analyzed the refractive index in a pane of float glass, searching for any spatial pattern. Here are samples of the refractive index from the edge and from the middle of the pane.
+
+```{r Problem Data Set}
+# Placing sample data into different vectors
+Edge_Pane <- c(1.51996,1.51997,1.51998,1.52000,1.51998,1.52004,1.52,1.52001,1.52,1.51997)
+
+Middle_Pane <- c(1.52001,1.51999,1.52004,1.51997,1.52005,1.52,1.52004,1.52002,1.52004,1.51996)
+
+
+```
+
+## Part A
+
+Suppose glass at the edge of the pane is $normal(\mu_1,\sigma_1^2)$, where $\sigma_1 = .00003$. Calculate the posterior distribution of $\mu_1$ when you use a $normal(1.52,.0001^2)$ prior for $\mu_1$. Show all work.
+
+![](1.a.jpg){width="660"}
+
+```{r Posterior Function}
+# Using the derivation above, we create a function to make calculation easier. 
+# 
+# Functions to calculate posterior distribution mean and standard deviation
+# with a Normal Sample with known sigma and a normal prior
+#
+
+post_mu <- function(sample, prior_mu, prior_sig, sample_sig){
+  n <- length(sample)
+  xbar <- mean(sample)
+  
+  mu <- (prior_mu*sample_sig^2 + n*xbar*prior_sig^2)/(sample_sig^2 + n*prior_sig^2)
+  
+  return(mu)
+}
+
+post_sigma <- function(sample, prior_mu, prior_sig, sample_sig){
+  n <- length(sample)
+  
+  var <- (sample_sig^2*prior_sig^2)/(sample_sig^2 + n*prior_sig^2)
+  
+  return(sqrt(var))
+}
+
+```
+
+```{r}
+# Given values
+sigma <- 0.00003
+sigma_0 <- 0.0001
+mu_0 <- 1.52000
+
+mu1_star <- post_mu(Edge_Pane,mu_0,sigma_0, sigma)
+sigma1_star <-post_sigma(Edge_Pane,mu_0,sigma_0, sigma)
+```
+
+-   Now we have $\mu_1|X \sim N(\mu^*,(\sigma^*)^2)$ where $\mu^*=$ `r mu1_star` and $\sigma^*=$ `r sigma1_star`
+
+## Part B
+
+Suppose glass at the middle of the pane is $normal(\mu_2,\sigma_2^2)$, where $\sigma_2 = .00003$. Calculate the posterior distribution of $\mu_2$ when you use a $normal(1.52,.0001^2)$ prior for $\mu_2$. Show all work.
+
+```{r}
+sigma <- 0.00003
+sigma_0 <- 0.0001
+mu_0 <- 1.52000
+
+mu2_star <- post_mu(Middle_Pane,mu_0,sigma_0, sigma)
+sigma2_star <-post_sigma(Middle_Pane,mu_0,sigma_0, sigma)
+```
+
+-   As the only difference between part a and part b is the sample data set; we use the derived formula provided in part a.
+
+-   This gives us: $\mu_2|X \sim N(\mu^*,(\sigma^*)^2)$ where $\mu^*=$ `r mu2_star` and $\sigma^*=$ `r sigma2_star`
+
+## Part C
+
+Find the posterior distribution of $\mu_d =\mu_1 - \mu_2$.
+
+![](1.c.jpg)
+
+-   From above we see that we now have our prior distribution for $\mu_d$ and the sample distribution $A,B | \mu_d$. As the sample distribution is normal with known variance and the prior is also normal we can again use the derived formula from part A.
+
+```{r}
+sigma <- sqrt(0.00003^2 + 0.00003^2)
+sigma_0 <- sqrt(0.0001^2 + 0.0001^2)
+mu_0 <- 0
+
+mu3_star <- post_mu(c(Edge_Pane, Middle_Pane),mu_0,sigma_0, sigma)
+sigma3_star <-post_sigma(c(Edge_Pane, Middle_Pane),mu_0,sigma_0, sigma)
+```
+
+-   This gives us: $\mu_d|X \sim N(\mu^*,(\sigma^*)^2)$ where $\mu^*=$ `r mu3_star` and $\sigma^*=$ `r sigma3_star`
+
+## Part D
+
+Find a 95% credible interval for $\mu_d$ above.
+
+```{r}
+# Bayesian Credible Interval is given by
+qnorm(c(0.025,0.975),mean = mu3_star, sd = sigma3_star)
+```
+
+## Part E
+
+Based on part d), Perform a Bayesian test of the hypothesis: $H_0: \mu_d = 0$ vs $H_1:\mu_d \ne 0$
+
+# Problem 2
+
+Suppose you wish to compare a new method of teaching to slow learners with the current standard method. You decide to base your comparison on the results of a reading test given at the end of a learning period of six months. Of a random sample of 22 slow learners, 10 are taught by the new method and 12 by the standard method. All 22 children are taught by qualified instructors under similar conditions for the designated six-month period. The results of the reading test at the end of this period are given below ( assume that the assumptions stated above are satisfied):
+
+```{r echo=FALSE}
+new_method <- c(80,76,70,80,66,85,79,71,81,76, NA, NA)
+standard_method <- c(79,73,72,62,76,68,70,86,75,68,73,66)
+
+test_scores<- data.frame(new_method, standard_method)
+
+test_scores %>%
+  gt() %>% 
+  fmt_missing(
+    columns = 1:2,
+    missing_text = ''
+    ) %>%
+  tab_header(
+    title = md("**Test Scores**")
+  )
+
+```
+
+## Part A
+
+Use the t-test that was discuss in the class to test whether there exists the true mean difference between the test scores using an $\alpha=0.05$ significance level.
+
+![](2a.jpg)
+
+-   From above we can see that there is not enough evidence to conclude that the mean test score for the new method is different from the standard method. This is confirmed below.
+
+```{r}
+t.test(new_method, standard_method)
+```
+
+## Part B
+
+Use the Bayesian procedures under the non-informative priors to answer the following problems
+
+```{r}
+# Analysis based on Noninformative prior 
+new_method <- c(80,76,70,80,66,85,79,71,81,76)
+standard_method <- c(79,73,72,62,76,68,70,86,75,68,73,66)
+
+M<-100000 # Number of Monte Carlo samples
+
+phi_new <- rgamma(M,(length(new_method)/2),
+               ((sd(new_method)**2*(length(new_method)-1))/2))
+mu_new <- rnorm(M,mean(new_method), 1/(length(new_method) * phi_new))
+
+
+phi_stan <- rgamma(M,(length(standard_method)/2),
+               ((sd(standard_method)**2*(length(standard_method)-1))/2))
+
+mu_stan <- rnorm(M,mean(standard_method), 1/(length(standard_method) * phi_stan)) 
+```
+
+### Section i.
+
+Are the test scores for the new method larger than the test scores for the standard method?
+
+-   Here we want to if the average test score for the new method is larger than than the standard method. We accomplish this my looking at our Monte Carlo sample.
+
+```{r}
+# MC approx. of P(mu_new > mu_stan|yA,yN)
+mean(mu_new > mu_stan)
+```
+
+### Section ii.
+
+Is the variance of the test scores for the new method smaller than that for the standard method?
+
+```{r}
+# MC approx. of P(sigma2_new > sigma2_stan|yA,yN)
+sig2_new <-1/phi_new
+sig2_stan <-1/phi_stan 
+
+mean(sig2_new > sig2_stan)
+
+```
+
+### Section iii.
+
+What are the posterior distributions of the coefficient of variation of each method?
+
+```{r}
+# Posterior distribution of the coefficient of variation for each group
+
+CV_new <-mu_new/sqrt(sig2_new)
+CV_stan <-mu_stan/sqrt(sig2_stan)
+
+hist(CV_new, prob = TRUE, xlab = 'CV', ylab = 'p(mu_new/sig_new|y_new)')
+lines(density(CV_new), lwd = 2)
+
+hist(CV_stan, prob = TRUE, xlab = 'CV', ylab = 'p(mu_stan/sig_stan|y_stan)')
+lines(density(CV_stan), lwd = 2)
+```
+
+### Section iV.
+
+What is the probability that a randomly selected learner taught by the new method will have better test scores than a randomly selected learner taught by the standard method?
+
+```{r}
+# Predictions
+# MC approx. of p(Y_new*>Y_stan*|y_new,y_stan)
+
+Y_news <- rnorm(M,mu_new, sqrt(sig2_stan))
+Y_stans <- rnorm(M,mu_stan, sqrt(sig2_stan))
+
+mean(Y_news > Y_stans)
+
+```
+
+# Problem 3
+
+Let $X_1 \sim N(\mu_1,\sigma_1^2)$ and $X_2 \sim N(\mu_2,\sigma_2^2)$ such that $X_1$ and $X_2$ are independent. Define $Y=X_1 + X_2$. The goal of this problem is to determine the distribution of Y; i.e., the sum of two independent normal random variables.
+
+## Part A
+
+Obviously, this is trivial, so simply state the distribution of Y.
+
+-   Here $Y \sim N( \mu_1 +\mu_2, \sigma_1^2+\sigma_2^2)$
+
+## Part B
+
+Approach 1: Consider using Monte Carlo sampling to obtain a histogram and kernel density estimate (see the code that I have provided) of the pdf of Y by directly sampling both $X_1$ and $X_2$. Over plot the true density of Y and comment. Note, you should make use of large enough Monte Carlo sample that your results are reasonable.
+
+```{r}
+# Here we take a simple X1 and X2
+X1 <-rnorm(M,2,1)
+X2 <- rnorm(M,1,1)
+
+Y <- X1 + X2
+
+# Histogram Plot with density Line
+hist(Y, prob = TRUE)
+lines(density(Y), col ='red' ,lwd = 2)
+lines()
+
+```
+
+-   We can choose $X1 \sim N(2,1)$ and $X2 \sim N(1,1)$ This means that Y should be $N(3,2)$ The above image validates this as it is centered around the mean of 3 and then looking at the Empirical Rule we see that almost all of the data is within $3\sqrt{2}$ , which is 3 times the Standard deviation.
+
+## Part C
+
+Approach 2: Note, the distribution of Y can also be obtained through the convolution of the probability distributions of $X_1$ and $X_2$. Sketch out theoretically how this would be done. Based on this idea, create a Monte Carlo sampling technique which can be used to approximate the pdf of Y evaluated at any point in the support. Use this function and add the approximation based on this technique to the Figure described in part (b) above.
+
+```{r}
+
+```
